@@ -19,6 +19,7 @@ class BookPlugin
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
         add_action('wp_ajax_display_book_details', array($this, 'display_book_details'));
         add_action('wp_ajax_nopriv_display_book_details', array($this, 'display_book_details'));
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_bootstrap'));
 
 
 
@@ -123,35 +124,91 @@ class BookPlugin
     }
 
     public function display_books_shortcode()
-    {
-        global $wpdb;
-        $books = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}books");
+{
+    global $wpdb;
+    $books = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}books");
 
-        ob_start();
-        ?>
-        <div class="book-grid">
+    ob_start();
+    ?>
+    <div class="container">
+        <div class="row">
             <?php foreach ($books as $book) : ?>
-                <div class="book-item">
-                    <img src="<?php echo $book->image_url; ?>" alt="<?php echo $book->title; ?>">
-                    <h3><?php echo $book->title; ?></h3>
-                    <p><?php echo $book->author; ?></p>
-                    <select class="buy-option" data-ebook="<?php echo $book->ebook_link; ?>" data-audio="<?php echo $book->audio_link; ?>" data-paperback="<?php echo $book->paperback_link; ?>">
-                        <option value="">Buy</option>
-                        <option value="ebook">eBook</option>
-                        <option value="audio">Audio Book</option>
-                        <option value="paperback">Paperback</option>
-                    </select>
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <img class="card-img-top" src="<?php echo $book->image_url; ?>" alt="<?php echo $book->title; ?>">
+                        <div class="card-body">
+                            <h5 class="card-title"><?php echo $book->title; ?></h5>
+                            <p class="card-text"><?php echo $book->author; ?></p>
+                            <button class="btn btn-primary btn-block mt-2 view-details" data-toggle="modal" data-target="#book-modal" data-description="<?php echo $book->description; ?>" data-about-author="<?php echo $book->about_author; ?>">View Details</button>
+                            <div class="buy-options mt-2">
+                                <select class="form-control buy-option" data-ebook="<?php echo $book->ebook_link; ?>" data-audio="<?php echo $book->audio_link; ?>" data-paperback="<?php echo $book->paperback_link; ?>">
+                                    <option value="">Buy</option>
+                                    <option value="ebook">eBook</option>
+                                    <option value="audio">Audio Book</option>
+                                    <option value="paperback">Paperback</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             <?php endforeach; ?>
         </div>
-        <?php
-        return ob_get_clean();
-    }
+    </div>
+
+    <!-- Modal for displaying book details -->
+    <div style="display:flex;justify-content:center;align-items:center" >
+        <div class="modal fade" id="book-modal" tabindex="-1" role="dialog" aria-labelledby="book-modal-label" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="book-modal-label"></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="description"></p>
+                        <p class="about-author"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+    <script>
+        // JavaScript/jQuery for modal popup
+        jQuery(document).ready(function ($) {
+            $('.view-details').click(function () {
+                var title = $(this).siblings('.card-title').text();
+                var description = $(this).data('description');
+                var aboutAuthor = $(this).data('about-author');
+                $('.modal-title').text(title);
+                $('.description').text('Description: ' + description);
+                $('.about-author').text('About Author: ' + aboutAuthor);
+            });
+        });
+    </script>
+    <?php
+    return ob_get_clean();
+}
+
 
     public function enqueue_scripts()
     {
+
         wp_enqueue_script('book-plugin-script', plugin_dir_url(__FILE__) . 'script.js', array('jquery'), null, true);
         wp_localize_script('book-plugin-script', 'book_plugin_ajax', array('ajax_url' => admin_url('admin-ajax.php')));
+    }
+
+    // Enqueue Bootstrap CSS and JavaScript
+    public function enqueue_bootstrap()
+    {
+        // Enqueue Bootstrap CSS
+        wp_enqueue_style('bootstrap-css', 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css', array(), '4.5.2');
+
+        // Enqueue Bootstrap JavaScript
+        wp_enqueue_script('bootstrap-js', 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js', array('jquery'), '4.5.2', true);
     }
 
     public function display_book_details()
